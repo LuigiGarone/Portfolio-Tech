@@ -35,4 +35,4 @@ Pull request benvenute. Per modifiche significative, aprire prima una issue.
 
 ## 📜 Licenza
 
-[Specificare la licenza]
+Vedi file LICENCE
