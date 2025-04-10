@@ -9,7 +9,7 @@
 
 1. Clonare il repository
 ```bash
-git clone https://github.com/Portfolio-Tech/Estrazione-Vincitore-Pasqua.git
+git clone https://github.com/LuigiGarone/Portfolio-Tech/tree/main/Estrazione-Vincitore-Pasqua
 cd Estrazione-Vincitore-Pasqua
 ```
 
