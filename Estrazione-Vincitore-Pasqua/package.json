@@ -1,0 +1,39 @@
+{
+  "name": "estrazione-vincitore-pasqua",
+  "version": "1.0.1",
+  "description": "Applicazione per estrazione vincitore Pasqua",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win portable --publish never",
+    "build": "node build.js"
+  },
+  "author": {
+    "name": "Luigi",
+    "email": "luigi@example.com"
+  },
+  "build": {
+    "appId": "com.tuaorganizzazione.estrazionepasqua",
+    "productName": "Estrazione Vincitore Pasqua",
+    "files": [
+      "**/*",
+      "!**/*.xlsx"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "sign": false,
+      "signDlls": false
+    }
+  },
+  "dependencies": {
+    "electron-log": "^4.4.8",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^24.1.2",
+    "electron-builder": "^24.13.3"
+  }
+}
