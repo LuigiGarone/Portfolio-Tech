@@ -84,9 +84,9 @@ Per aggiornare da una versione precedente:
 
 Per segnalare problemi o suggerire miglioramenti:
 
-1. Apri un issue sulla [pagina GitHub del progetto](https://github.com/tuoprofilo/portfolio-tech/issues)
-2. Invia un'email a [support@example.com](mailto:support@example.com)
-3. Includi sempre le seguenti informazioni:
+1. Aprire issue su GitHub per assistenza 
+
+2. Includi sempre le seguenti informazioni:
    - Versione dell'applicazione
    - Sistema operativo e versione
    - Descrizione dettagliata del problema
