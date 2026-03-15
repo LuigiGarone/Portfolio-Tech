@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonBreak: Cyberpunk Arkanoid</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* Additional styles to ensure everything is visible */
+        #gameCanvas {
+            display: block;
+            background-color: rgba(18, 0, 36, 0.8);
+            width: 800px;
+            height: 540px;
+        }
+
+        /* Ensure buttons are visible and clickable */
+        button {
+            cursor: pointer;
+            position: relative;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div id="score">Score: 0</div>
+            <div id="level">Level: 1</div>
+            <div id="lives">Vite: 3</div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-menu" id="menu">
+            <h1>NeonBreak</h1>
+            <h2>Cyberpunk Arkanoid</h2>
+            <button id="startButton">Start Game</button>
+            <button id="highScoresButton">High Scores</button>
+            <div class="instructions">
+                <p>Move paddle: ← → Arrow Keys or A/D</p>
+                <p>Fast Movement: Hold SHIFT while moving</p>
+                <p>Launch ball: Space</p>
+                <p>Pause: ESC</p>
+                <p><span style="color:#ff00ff;">Cheats:</span> W = infinite lives | I = anti-gravity floor | P = toggle
+                    powerup persistence</p>
+                <p class="powerup-note">Watch for special power-ups! <button id="showPowerupGuide"
+                        style="background: none; border: none; color: #00ffff; text-decoration: underline; cursor: pointer; padding: 0; font-size: 0.9em;">Show
+                        Guide</button></p>
+            </div>
+        </div>
+        <div class="game-over hidden" id="gameOver">
+            <h2>Game Over</h2>
+            <div id="finalScore">Score: 0</div>
+            <div class="name-input">
+                <label for="playerName">Enter your name:</label>
+                <input type="text" id="playerName" maxlength="10">
+            </div>
+            <button id="submitScore">Submit Score</button>
+            <button id="restartButton">Play Again</button>
+        </div>
+        <div class="high-scores hidden" id="highScores">
+            <h2>High Scores</h2>
+            <div id="scoresList"></div>
+            <button id="backButton">Back to Menu</button>
+        </div>
+        <div class="level-complete hidden" id="levelComplete">
+            <h2>Level Complete!</h2>
+            <div id="levelScore">Score: 0</div>
+            <button id="nextLevelButton">Next Level</button>
+        </div>
+    </div>
+
+    <!-- Power-up Guide (nascosto inizialmente) -->
+    <div id="powerupGuide"
+        style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(18, 0, 36, 0.9); border: 2px solid #ff00ff; color: white; padding: 20px; font-family: 'Orbitron', sans-serif; z-index: 1000; display: none; max-width: 400px; text-align: center;">
+        <h3 style="color: #00ffff; margin-bottom: 15px;">Power-Up Guide</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 0 auto;">
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; width: 40px; text-align: center;">+
+                </td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Extend Paddle</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">-</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Shrink Paddle</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">S</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Slow Ball</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">F</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Fast Ball</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">M</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Multi Ball (2)</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">♥</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Extra Life</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">∞</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Double Ball (4)</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">⚡</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Super Speed</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">W</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Mega Paddle</td>
+            </tr>
+            <tr>
+                <td style="padding: 5px; border: 1px solid #ff00ff; color: #ff00ff; text-align: center;">≡</td>
+                <td style="padding: 5px; border: 1px solid #ff00ff; text-align: left;">Dual Paddle</td>
+            </tr>
+        </table>
+        <button id="closePowerupGuide"
+            style="margin-top: 15px; background: #00ffff; color: #000; border: none; padding: 5px 15px; cursor: pointer;">Close</button>
+    </div>
+
+    <!-- Added debug overlay -->
+    <div id="debug"
+        style="position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-family: monospace; display: none;">
+        Debug Mode
+    </div>
+
+    <!-- Add error handling -->
+    <script>
+        window.onerror = function (message, source, lineno, colno, error) {
+            console.error('ERROR:', message, 'at', source, lineno, colno);
+            alert('Game error: ' + message);
+            return true;
+        };
+    </script>
+
+    <script src="js/audio-simple.js"></script>
+    <script src="js/game.fixed.js"></script>
+</body>
+
+</html>

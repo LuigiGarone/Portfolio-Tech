@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🌊 Innalzamento dei Mari — Simulazione Interattiva | Luigi Garone</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inconsolata:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#020b15;--panel:#040f1c;--border:#0a2840;--ocean:#031828;--water:#00c8ff;
+--r0:#3a6830;--r1:#888800;--r2:#aa5500;--r3:#882000;--r4:#5a0010;
+--text:#ddeeff;--dim:#4a7090;--accent:#00c8ff;--danger:#ff3030;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;font-size:13px;}
+body{background:var(--bg);color:var(--text);font-family:'Inconsolata','Courier New',monospace;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden;}
+header{text-align:center;padding:12px 16px 8px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(0,180,255,0.07),transparent);flex-shrink:0;}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(22px,4vw,48px);letter-spacing:5px;text-shadow:0 0 40px rgba(0,200,255,0.45);}
+.hrow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:2px;}
+.hrow p{color:var(--dim);font-size:9px;letter-spacing:1.5px;}.author{font-size:9px;color:#3a6888;letter-spacing:1px;}.author strong{color:#5a90a8;}
+.stats{display:flex;justify-content:space-around;flex-wrap:wrap;gap:4px;padding:5px 16px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;}
+.si{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:90px;}
+.sl{font-size:8px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;}
+.sv{font-size:15px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;transition:color .4s;}.sv.hot{color:var(--danger);}
+.map-tabs{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 0;flex-shrink:0;}
+.tabs-left{display:flex;gap:0;}
+.mtab{padding:4px 14px;font-size:9px;letter-spacing:2px;cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:3px 3px 0 0;color:var(--dim);background:transparent;font-family:'Inconsolata',monospace;text-transform:uppercase;transition:all .2s;}
+.mtab.on{border-color:var(--border);color:var(--accent);background:var(--panel);}
+.nav-back{display:none;align-items:center;gap:6px;font-size:9px;color:var(--dim);cursor:pointer;padding:3px 10px;border:1px solid var(--border);border-radius:2px;background:transparent;font-family:'Inconsolata',monospace;letter-spacing:1px;transition:all .2s;}
+.nav-back:hover{color:var(--accent);border-color:var(--accent);}.nav-back.on{display:flex;}
+.maps{position:relative;flex:1;min-height:320px;max-height:520px;padding:0 6px;}
+.mp{background:var(--panel);border:1px solid var(--border);border-radius:0 3px 3px 3px;overflow:hidden;position:absolute;inset:0;display:none;}.mp.on{display:block;}
+.mt{position:absolute;top:7px;left:10px;font-size:9px;letter-spacing:2px;color:var(--dim);z-index:10;pointer-events:none;}
+.zoom-hint{position:absolute;top:7px;right:10px;font-size:8px;color:var(--dim);z-index:10;pointer-events:none;opacity:0.6;}
+svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing;}
+.country{stroke:#061422;stroke-width:.3;transition:fill .4s ease;}
+.flood-zone{opacity:0;transition:opacity .5s;cursor:pointer;}.flood-zone.on{opacity:.78;}
+.graticule{fill:none;stroke:#081828;stroke-width:.22;}
+@keyframes wPulse{0%,100%{opacity:.72;}50%{opacity:.92;}}.flood-zone.on{animation:wPulse 3s ease-in-out infinite;}
+.region-path{stroke:#0a3050;stroke-width:.5;transition:fill .4s;}
+.map-legend{position:absolute;bottom:8px;left:10px;display:flex;flex-direction:column;gap:2px;pointer-events:none;background:rgba(4,15,28,.85);padding:5px 7px;border-radius:3px;border:1px solid var(--border);}
+.leg-row{display:flex;align-items:center;gap:5px;font-size:8px;color:var(--dim);}.leg-sq{width:9px;height:9px;border-radius:1px;flex-shrink:0;}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--panel);color:var(--dim);font-size:10px;letter-spacing:2px;z-index:5;transition:opacity .5s;}.loaded .loading{opacity:0;pointer-events:none;}
+.ctrl{padding:6px 14px;background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;}
+.lrow{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+.lbig{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);line-height:1;min-width:100px;text-shadow:0 0 20px rgba(0,200,255,.4);transition:color .4s;}.lbig.hot{color:var(--danger);text-shadow:0 0 20px rgba(255,0,0,.4);}
+.swrap{flex:1;display:flex;flex-direction:column;gap:3px;}
+#sl{width:100%;height:7px;border-radius:4px;background:linear-gradient(to right,#0d4060,#887000 45%,#aa3000 70%,#880010);outline:none;cursor:pointer;-webkit-appearance:none;}
+#sl::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(0,200,255,.7);cursor:pointer;}
+#sl::-moz-range-thumb{width:17px;height:17px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;}
+.slbls{display:flex;justify-content:space-between;font-size:8px;color:var(--dim);}
+.scen-panel{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
+.scen-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.scen-label{font-size:8px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;min-width:70px;}
+.scen-btn{padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--dim);font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:all .2s;text-transform:uppercase;}
+.scen-btn:hover{border-color:var(--accent);color:var(--accent);}
+.scen-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(0,200,255,.1);}
+.scen-btn.pessim.on{border-color:var(--danger);color:var(--danger);background:rgba(255,0,0,.07);}
+.scen-btn.ottim.on{border-color:#30dd60;color:#30dd60;background:rgba(0,255,80,.07);}
+.anim-btn{padding:3px 12px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-family:'Inconsolata',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;border-radius:2px;transition:all .2s;margin-left:auto;}
+.bot{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px 6px;flex-shrink:0;}
+.bot.three-col{grid-template-columns:1fr 1fr 1fr;}
+.dp{background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:6px;overflow-y:auto;max-height:170px;}
+.pt{font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;}
+.crow{display:grid;grid-template-columns:1.2em 22px 1fr 60px 42px;gap:3px;padding:2px 0;border-bottom:1px solid rgba(10,40,64,.4);font-size:10px;align-items:center;}
+.crow:last-child{border-bottom:none;}.crow .rank{color:var(--dim);font-size:9px;text-align:right;}
+.bar-wrap{height:4px;background:#061422;border-radius:2px;}.bar-fill{height:100%;border-radius:2px;transition:width .5s ease;}
+.zi{display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:10px;border-bottom:1px solid rgba(10,40,64,.4);transition:color .3s;gap:4px;}
+.zi:last-child{border-bottom:none;}.zi.sub{color:var(--water);}.zi .zn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.zi .zs{font-size:9px;color:var(--dim);flex-shrink:0;}.zi.sub .zs{color:var(--water);}
+.cont-row{display:grid;grid-template-columns:1.2em 1fr 60px 42px;gap:3px;padding:3px 0;border-bottom:1px solid rgba(10,40,64,.4);font-size:10px;align-items:center;}.cont-row:last-child{border-bottom:none;}
+.src{padding:5px 14px;background:var(--panel);border-top:1px solid var(--border);font-size:8px;color:var(--dim);line-height:1.7;flex-shrink:0;}.src strong{color:var(--text);}
+.disc{padding:3px 14px;font-size:8px;color:var(--dim);text-align:center;border-top:1px solid var(--border);flex-shrink:0;}
+#tip{position:fixed;background:rgba(2,12,26,.95);border:1px solid #0a2840;color:#ddeeff;padding:4px 9px;border-radius:3px;font-size:10px;font-family:'Inconsolata',monospace;pointer-events:none;z-index:999;display:none;max-width:300px;}
+@media(max-width:680px){.bot,.bot.three-col{grid-template-columns:1fr;}.lbig{font-size:26px;min-width:70px;}.scen-row{gap:2px;}.scen-btn{padding:2px 6px;font-size:8px;}}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
+#italyMap{width:100%;height:100%;background:#020d1a;z-index:1;}
+.leaflet-container{background:#020d1a !important;font-family:'Inconsolata',monospace !important;}
+.leaflet-control-zoom a{background:var(--panel) !important;color:var(--accent) !important;border-color:var(--border) !important;}
+.leaflet-control-attribution{background:rgba(4,15,28,.85) !important;color:var(--dim) !important;font-size:7px !important;}
+.dark-tooltip{background:rgba(2,12,26,.95) !important;border:1px solid #0a2840 !important;color:#ddeeff !important;font-family:'Inconsolata',monospace !important;font-size:11px !important;padding:5px 8px !important;border-radius:3px !important;box-shadow:0 0 15px rgba(0,200,255,.2) !important;}
+.dark-tooltip .leaflet-tooltip-tip{display:none;}
+@keyframes floodPulse{0%,100%{fill-opacity:.45;}50%{fill-opacity:.65;}}
+.flood-active{animation:floodPulse 2.5s ease-in-out infinite;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌊 INNALZAMENTO DEI MARI</h1>
+  <div class="hrow">
+    <p>SIMULAZIONE INTERATTIVA — DATI: IPCC AR6 (2021) · NASA · NOAA · USGS · AntarcticGlaciers.org</p>
+    <span class="author">Autore: <strong>Luigi Garone</strong></span>
+  </div>
+</header>
+<div class="stats">
+  <div class="si"><span class="sl">Livello</span><span class="sv" id="sLvl">+0.00 m</span></div>
+  <div class="si"><span class="sl">Superficie sommersa</span><span class="sv" id="sArea">0 km²</span></div>
+  <div class="si"><span class="sl">Popolazione a rischio</span><span class="sv hot" id="sPop">0</span></div>
+  <div class="si"><span class="sl">Italia sommersa</span><span class="sv" id="sIta">0 km²</span></div>
+  <div class="si"><span class="sl">Scenario</span><span class="sv" id="sScen" style="font-size:9px">Baseline 2024</span></div>
+</div>
+<div class="map-tabs">
+  <div class="tabs-left">
+    <button class="mtab on" onclick="switchMap('w',this)">🌍 MONDO</button>
+    <button class="mtab" onclick="switchMap('i',this)">🇮🇹 ITALIA</button>
+  </div>
+  <button class="nav-back" id="navBack" onclick="switchMap('w',document.querySelector('.mtab'))">← Torna al Mondo</button>
+</div>
+<div class="maps">
+  <div class="mp on" id="wPanel">
+    <div class="mt">🌍 MONDO — 50m resolution · scroll/zoom</div>
+    <div class="zoom-hint">🖱 Scroll = zoom · Drag = pan</div>
+    <div class="loading" id="wLoad">⟳ CARICAMENTO MAPPA MONDIALE (50m)...</div>
+    <svg id="wSvg"></svg>
+    <div class="map-legend">
+      <div class="leg-row"><div class="leg-sq" style="background:#234828"></div>Sicuro</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#888800"></div>&lt;5% sommerso</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#aa5500"></div>5–20%</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#882000"></div>20–50%</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#5a0010"></div>&gt;50%</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#3a0820"></div>&gt;80%</div>
+    </div>
+  </div>
+  <div class="mp" id="iPanel">
+    <div class="mt" style="z-index:1000">🇮🇹 ITALIA — DEM Terrain Flood · dati elevazione reali AWS Terrain Tiles</div>
+    <div class="loading" id="iLoad" style="z-index:1001">⟳ CARICAMENTO MAPPA SATELLITARE...</div>
+    <div id="italyMap"></div>
+    <div class="map-legend" id="iLegend" style="display:none;z-index:1000">
+      <div class="leg-row"><div class="leg-sq" style="background:rgba(5,90,220,.55)"></div>Zona sommersa (DEM)</div>
+      <div class="leg-row"><div class="leg-sq" style="background:rgba(5,60,240,.78)"></div>Sommersione profonda</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#ffaa00"></div>Città sicura</div>
+      <div class="leg-row"><div class="leg-sq" style="background:#00c8ff"></div>Città sommersa</div>
+    </div>
+  </div>
+</div>
+<div class="ctrl">
+  <div class="lrow">
+    <div class="lbig" id="lBig">+0.0<span style="font-size:18px">m</span></div>
+    <div class="swrap">
+      <input type="range" id="sl" min="0" max="70" step="0.1" value="0">
+      <div class="slbls"><span>Oggi</span><span>+1m</span><span>+10m</span><span>+35m</span><span>+65m</span></div>
+    </div>
+    <button class="anim-btn" id="animBtn" onclick="toggleAnim()">▶ ANIMAZIONE</button>
+  </div>
+  <div class="scen-panel">
+    <div class="scen-row">
+      <span class="scen-label">Scenario:</span>
+      <button class="scen-btn ottim" onclick="pickType('ottim',this)">🟢 Ottimistico (SSP1-2.6)</button>
+      <button class="scen-btn" onclick="pickType('prob',this)">🟡 Probabile (SSP2-4.5)</button>
+      <button class="scen-btn pessim" onclick="pickType('pessim',this)">🔴 Pessimistico (SSP5-8.5)</button>
+    </div>
+    <div class="scen-row">
+      <span class="scen-label">Orizzonte:</span>
+      <button class="scen-btn" onclick="pickTime(2050,this)">2050</button>
+      <button class="scen-btn" onclick="pickTime(2100,this)">2100</button>
+      <button class="scen-btn" onclick="pickTime(2150,this)">2150</button>
+      <button class="scen-btn" onclick="pickTime(2200,this)">2200</button>
+      <button class="scen-btn" onclick="pickTime(2300,this)">2300</button>
+      <button class="scen-btn pessim" onclick="pickTime(99999,this)">☠ SCIOGLIMENTO TOTALE</button>
+    </div>
+  </div>
+</div>
+<div class="bot three-col" id="botPanels">
+  <div class="dp">
+    <div class="pt" id="cListTitle">🌍 Top 25 — Paesi più colpiti</div>
+    <div id="cList"><div style="color:var(--dim);font-size:10px">Sposta il cursore per attivare</div></div>
+  </div>
+  <div class="dp">
+    <div class="pt" id="zListTitle">🇮🇹 Regioni italiane a rischio</div>
+    <div id="zList"></div>
+  </div>
+  <div class="dp">
+    <div class="pt">🌐 Continenti — perdita costiera</div>
+    <div id="contList"></div>
+  </div>
+</div>
+<div class="src">
+  <strong>FONTI:</strong> IPCC AR6 (2021) &amp; SROCC (2019) · NASA sealevel.nasa.gov · NOAA Climate.gov ·
+  USGS · AntarcticGlaciers.org · NSIDC &nbsp;|&nbsp;
+  ⚠ <em>Antartide ≈58m + Groenlandia ≈7.4m + ghiacciai ≈0.5m = ~65m. Scioglimento totale: ≥10.000 anni.</em>
+</div>
+<div class="disc">© Luigi Garone — IPCC · NASA · NOAA · USGS | D3.js + Natural Earth 50m + OpenPolis Regions</div>
+<div id="tip"></div>
+<script>
+// ══════════════════════════════════════════════════════
+// SCENARI IPCC AR6 — livello mare (metri)
+// ══════════════════════════════════════════════════════
+const SCEN_MATRIX = {
+  ottim:  {2050:0.18, 2100:0.38, 2150:0.55, 2200:0.75, 2300:1.0,  99999:65},
+  prob:   {2050:0.24, 2100:0.66, 2150:1.3,  2200:2.2,  2300:4.5,  99999:65},
+  pessim: {2050:0.32, 2100:1.01, 2150:2.5,  2200:5.0,  2300:15.0, 99999:65},
+};
+const SCEN_NAMES = {ottim:"Ottimistico SSP1-2.6", prob:"Probabile SSP2-4.5", pessim:"Pessimistico SSP5-8.5"};
+const TIME_NAMES = {2050:"2050",2100:"2100",2150:"2150",2200:"2200",2300:"2300",99999:"Scioglimento Totale (~10.000+ anni)"};
+
+const gLevels = [
+  {m:0,km2:0,pop:0},{m:0.3,km2:350000,pop:150},{m:0.5,km2:620000,pop:280},
+  {m:1,km2:1150000,pop:520},{m:2,km2:2500000,pop:700},{m:5,km2:6200000,pop:920},
+  {m:10,km2:14500000,pop:1250},{m:25,km2:38000000,pop:2100},{m:50,km2:75000000,pop:4600},
+  {m:65,km2:112000000,pop:6200},
+];
+
+// ISO3→{nome,flag,area,continent,flood_pct[0.5,1,2,5,10,25,50,65m]}
+const cData = {
+  NLD:{n:"Paesi Bassi",f:"🇳🇱",a:41543,c:"EU",v:[.20,.27,.35,.52,.62,.72,.85,.92]},
+  BGD:{n:"Bangladesh",f:"🇧🇩",a:147570,c:"AS",v:[.08,.12,.20,.32,.50,.64,.80,.89]},
+  VNM:{n:"Vietnam",f:"🇻🇳",a:331212,c:"AS",v:[.04,.06,.10,.17,.26,.42,.60,.74]},
+  EGY:{n:"Egitto",f:"🇪🇬",a:1001450,c:"AF",v:[.01,.02,.03,.05,.09,.15,.24,.34]},
+  IDN:{n:"Indonesia",f:"🇮🇩",a:1904569,c:"AS",v:[.02,.04,.07,.13,.20,.30,.43,.56]},
+  THA:{n:"Tailandia",f:"🇹🇭",a:513120,c:"AS",v:[.02,.05,.08,.14,.22,.36,.50,.62]},
+  KHM:{n:"Cambogia",f:"🇰🇭",a:181035,c:"AS",v:[.05,.09,.15,.27,.42,.58,.70,.80]},
+  GBR:{n:"UK",f:"🇬🇧",a:243610,c:"EU",v:[.01,.02,.04,.07,.11,.18,.26,.34]},
+  DEU:{n:"Germania",f:"🇩🇪",a:357114,c:"EU",v:[.005,.01,.02,.05,.08,.14,.22,.30]},
+  FRA:{n:"Francia",f:"🇫🇷",a:551695,c:"EU",v:[.003,.008,.015,.035,.058,.10,.158,.218]},
+  ITA:{n:"Italia",f:"🇮🇹",a:301340,c:"EU",v:[.005,.012,.020,.036,.056,.092,.133,.168]},
+  USA:{n:"USA",f:"🇺🇸",a:9833517,c:"NA",v:[.003,.006,.011,.022,.037,.067,.115,.16]},
+  CHN:{n:"Cina",f:"🇨🇳",a:9596960,c:"AS",v:[.005,.010,.017,.032,.053,.088,.133,.178]},
+  IND:{n:"India",f:"🇮🇳",a:3287263,c:"AS",v:[.008,.014,.023,.042,.067,.112,.163,.213]},
+  JPN:{n:"Giappone",f:"🇯🇵",a:377975,c:"AS",v:[.010,.018,.029,.052,.082,.133,.193,.243]},
+  DNK:{n:"Danimarca",f:"🇩🇰",a:43094,c:"EU",v:[.04,.08,.16,.30,.45,.60,.74,.83]},
+  MDV:{n:"Maldive",f:"🇲🇻",a:298,c:"AS",v:[.60,.80,.95,1,1,1,1,1]},
+  MMR:{n:"Myanmar",f:"🇲🇲",a:676578,c:"AS",v:[.02,.04,.07,.13,.20,.32,.46,.57]},
+  NGA:{n:"Nigeria",f:"🇳🇬",a:923768,c:"AF",v:[.008,.015,.025,.046,.072,.117,.167,.212]},
+  PHL:{n:"Filippine",f:"🇵🇭",a:300000,c:"AS",v:[.015,.028,.045,.080,.125,.195,.27,.325]},
+  BRA:{n:"Brasile",f:"🇧🇷",a:8515767,c:"SA",v:[.002,.004,.008,.018,.030,.055,.095,.135]},
+  ARG:{n:"Argentina",f:"🇦🇷",a:2780400,c:"SA",v:[.002,.005,.010,.022,.038,.068,.115,.16]},
+  PAK:{n:"Pakistan",f:"🇵🇰",a:881913,c:"AS",v:[.006,.011,.019,.036,.058,.095,.14,.185]},
+  MYS:{n:"Malesia",f:"🇲🇾",a:330803,c:"AS",v:[.012,.022,.038,.068,.105,.165,.24,.30]},
+  AUS:{n:"Australia",f:"🇦🇺",a:7692024,c:"OC",v:[.001,.003,.005,.012,.020,.038,.065,.09]},
+  MOZ:{n:"Mozambico",f:"🇲🇿",a:801590,c:"AF",v:[.010,.018,.030,.055,.088,.142,.205,.26]},
+  SEN:{n:"Senegal",f:"🇸🇳",a:196722,c:"AF",v:[.008,.015,.026,.048,.076,.125,.18,.23]},
+  TUV:{n:"Tuvalu",f:"🇹🇻",a:26,c:"OC",v:[.70,.90,.98,1,1,1,1,1]},
+  MHL:{n:"Isole Marshall",f:"🇲🇭",a:181,c:"OC",v:[.55,.75,.92,1,1,1,1,1]},
+  GUY:{n:"Guyana",f:"🇬🇾",a:214969,c:"SA",v:[.015,.028,.048,.088,.135,.21,.30,.37]},
+};
+const n2i={528:"NLD",50:"BGD",704:"VNM",818:"EGY",360:"IDN",764:"THA",116:"KHM",826:"GBR",276:"DEU",250:"FRA",380:"ITA",840:"USA",156:"CHN",356:"IND",392:"JPN",208:"DNK",462:"MDV",104:"MMR",566:"NGA",608:"PHL",76:"BRA",32:"ARG",586:"PAK",458:"MYS",36:"AUS",508:"MOZ",686:"SEN",798:"TUV",584:"MHL",328:"GUY"};
+
+const CONT_META = {
+  AS:{n:"Asia",f:"🌏",countries:["BGD","VNM","IDN","THA","KHM","CHN","IND","JPN","MDV","MMR","PHL","PAK","MYS"]},
+  EU:{n:"Europa",f:"🌍",countries:["NLD","GBR","DEU","FRA","ITA","DNK"]},
+  AF:{n:"Africa",f:"🌍",countries:["EGY","NGA","MOZ","SEN"]},
+  NA:{n:"Nord America",f:"🌎",countries:["USA"]},
+  SA:{n:"Sud America",f:"🌎",countries:["BRA","ARG","GUY"]},
+  OC:{n:"Oceania",f:"🌏",countries:["AUS","TUV","MHL"]},
+};
+
+// Regioni italiane — dati vulnerabilità costiera
+const IT_REGIONS = [
+  {name:"Veneto",        code:"VEN", coastKm2:4200, threshold:0.3, maxPct:.38, key:"veneto"},
+  {name:"Emilia-Romagna",code:"EMR", coastKm2:3800, threshold:0.5, maxPct:.32, key:"emilia-romagna"},
+  {name:"Friuli Venezia Giulia",code:"FVG",coastKm2:800,threshold:0.8,maxPct:.15,key:"friuli venezia giulia"},
+  {name:"Puglia",        code:"PUG", coastKm2:2100, threshold:1.0, maxPct:.18, key:"puglia"},
+  {name:"Lazio",         code:"LAZ", coastKm2:1800, threshold:2.0, maxPct:.14, key:"lazio"},
+  {name:"Campania",      code:"CAM", coastKm2:1200, threshold:2.5, maxPct:.12, key:"campania"},
+  {name:"Sicilia",       code:"SIC", coastKm2:1500, threshold:3.0, maxPct:.10, key:"sicilia"},
+  {name:"Sardegna",      code:"SAR", coastKm2:800,  threshold:3.5, maxPct:.08, key:"sardegna"},
+  {name:"Toscana",       code:"TOS", coastKm2:900,  threshold:2.0, maxPct:.10, key:"toscana"},
+  {name:"Calabria",      code:"CAL", coastKm2:600,  threshold:4.0, maxPct:.06, key:"calabria"},
+  {name:"Marche",        code:"MAR", coastKm2:400,  threshold:3.0, maxPct:.05, key:"marche"},
+  {name:"Abruzzo",       code:"ABR", coastKm2:300,  threshold:3.5, maxPct:.04, key:"abruzzo"},
+  {name:"Liguria",       code:"LIG", coastKm2:200,  threshold:5.0, maxPct:.04, key:"liguria"},
+  {name:"Molise",        code:"MOL", coastKm2:100,  threshold:4.0, maxPct:.03, key:"molise"},
+  {name:"Basilicata",    code:"BAS", coastKm2:200,  threshold:5.0, maxPct:.03, key:"basilicata"},
+  {name:"Lombardia",     code:"LOM", coastKm2:5000, threshold:10,  maxPct:.15, key:"lombardia"},
+  {name:"Piemonte",      code:"PIE", coastKm2:2000, threshold:15,  maxPct:.08, key:"piemonte"},
+];
+
+// Zone alluvionali Italia (soglie per statistiche)
+const iZones = [
+  {id:"venezia_lag",n:"Laguna di Venezia",t:0.3,km2:550,d:"Venezia, Chioggia, isole lagunari"},
+  {id:"po_delta",n:"Delta del Po",t:0.8,km2:800,d:"Polesine, Comacchio, valli"},
+  {id:"adriatic_low",n:"Costa adriatica bassa",t:1.5,km2:1200,d:"Rimini→Foggia, fasce costiere"},
+  {id:"tyrrh_coast",n:"Litorale tirrenico",t:2.0,km2:600,d:"Ostia, Versilia, Volturno"},
+  {id:"po_bassa",n:"Bassa pianura padana",t:2.5,km2:3000,d:"Ferrara, Rovigo, Mantova"},
+  {id:"pontine",n:"Pianura Pontina",t:3.5,km2:1800,d:"Latina, Terracina"},
+  {id:"sardinia_low",n:"Coste basse Sardegna",t:4.0,km2:800,d:"Cagliari, Oristano"},
+  {id:"po_med",n:"Pianura Padana centrale",t:5.0,km2:6000,d:"Valle del Po est-centrale"},
+  {id:"sicily_coast",n:"Pianure costiere Sicilia",t:5.0,km2:1500,d:"Catania, Gela, Palermo bassa"},
+  {id:"campania_pl",n:"Piana Campana",t:6.0,km2:800,d:"Caserta, piana campana"},
+  {id:"calabria_pl",n:"Piane calabresi",t:8.0,km2:600,d:"Gioia Tauro, Sibari"},
+  {id:"po_full",n:"Pianura Padana estesa",t:15,km2:25000,d:"Fino a 15m s.l.m."},
+  {id:"n_italy_all",n:"Pianura Padana completa",t:50,km2:50000,d:"Quasi tutta la Pianura Padana"},
+];
+
+const iCities = [
+  {n:"Venezia",lo:12.34,la:45.44,e:1,imp:true},{n:"Rimini",lo:12.57,la:44.06,e:5},
+  {n:"Ravenna",lo:12.20,la:44.42,e:4},{n:"Bari",lo:16.87,la:41.12,e:5},
+  {n:"Cagliari",lo:9.11,la:39.22,e:9},{n:"Roma",lo:12.50,la:41.90,e:21,imp:true},
+  {n:"Napoli",lo:14.27,la:40.85,e:17},{n:"Palermo",lo:13.36,la:38.11,e:14},
+  {n:"Genova",lo:8.94,la:44.41,e:19},{n:"Milano",lo:9.19,la:45.46,e:120,imp:true},
+  {n:"Trieste",lo:13.78,la:45.65,e:2},{n:"Ferrara",lo:11.62,la:44.84,e:9},
+  {n:"Catania",lo:15.09,la:37.50,e:7},{n:"Firenze",lo:11.25,la:43.77,e:50},
+  {n:"Bologna",lo:11.34,la:44.49,e:54},{n:"Pescara",lo:14.21,la:42.46,e:4},
+  {n:"Taranto",lo:17.24,la:40.47,e:3},{n:"Latina",lo:12.90,la:41.47,e:21},
+];
+// ══════════════════════════════════════════════════════
+// STATO
+// ══════════════════════════════════════════════════════
+let curLvl=0,isAnim=false,animId=null,wData=null,italyInited=false,curTab='w';
+let selType=null,selTime=null,italyRegionsGeo=null;
+let italyMap=null,floodDEMLayer=null,cityMkrs=[],regLayer=null;
+
+// ══════════════════════════════════════════════════════
+// UTILITY
+// ══════════════════════════════════════════════════════
+function lerp(m,arr,kM,kV){if(m<=0)return 0;for(let i=1;i<arr.length;i++){if(m<=arr[i][kM]){const t=(m-arr[i-1][kM])/(arr[i][kM]-arr[i-1][kM]);return arr[i-1][kV]+t*(arr[i][kV]-arr[i-1][kV]);}}return arr[arr.length-1][kV];}
+const vBreaks=[0.5,1,2,5,10,25,50,65];
+function floodPct(iso3,m){const d=cData[iso3];if(!d||m<=0)return 0;if(m>=65)return d.v[7];for(let i=1;i<vBreaks.length;i++){if(m<=vBreaks[i]){const t=(m-vBreaks[i-1])/(vBreaks[i]-vBreaks[i-1]);const prev=i===1?(m<0.5?0:d.v[0]):d.v[i-1];return prev+t*(d.v[i]-prev);}}return d.v[0];}
+function italyKm2(m){let tot=0;for(const z of iZones){if(m<z.t)continue;const ex=m-z.t;tot+=z.km2*(0.25+0.75*Math.min(1,ex/Math.max(1,z.t)));}return Math.round(tot);}
+function regionFloodKm2(r,m){if(m<r.threshold)return 0;const ex=m-r.threshold;const prog=Math.min(1,ex/(r.threshold*3+5));return Math.round(r.coastKm2*prog*r.maxPct/.15);}
+function regionFloodPct(r,m){if(m<r.threshold)return 0;const ex=m-r.threshold;return Math.min(r.maxPct,r.maxPct*Math.min(1,ex/(r.threshold*3+5)));}
+function fmt(n){if(n>=1e9)return(n/1e9).toFixed(1)+"B";if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(0)+"K";return String(Math.round(n));}
+function cColor(iso3,m){const p=floodPct(iso3,m);if(p>=.80)return"#3a0820";if(p>=.50)return"#5a0010";if(p>=.20)return"#882000";if(p>=.10)return"#aa5500";if(p>=.05)return"#888800";if(p>=.01)return"#3a6830";return"#1a3020";}
+function wColor(excess){if(excess>20)return"#031828";if(excess>10)return"#083050";if(excess>5)return"#0d4070";if(excess>2)return"#1058a0";return"#1468b0";}
+function regColor(r,m){const p=regionFloodPct(r,m);if(p>=.20)return"#aa3000";if(p>=.10)return"#886800";if(p>=.03)return"#0a5530";return"#1e4028";}
+const tip=document.getElementById("tip");
+function showTip(ev,txt){tip.textContent=txt;tip.style.left=(ev.clientX+12)+"px";tip.style.top=(ev.clientY-30)+"px";tip.style.display="block";}
+function hideTip(){tip.style.display="none";}
+
+// ══════════════════════════════════════════════════════
+// MAPPA MONDO (50m)
+// ══════════════════════════════════════════════════════
+async function initWorld(){
+  const el=document.getElementById("wPanel");
+  const W=el.clientWidth||900,H=el.clientHeight||480;
+  const svg=d3.select("#wSvg").attr("viewBox",`0 0 ${W} ${H}`);
+  svg.append("rect").attr("width",W).attr("height",H).attr("fill","#031828");
+  const proj=d3.geoNaturalEarth1().scale(W/6.28).translate([W/2,H/2]);
+  const path=d3.geoPath().projection(proj);
+  svg.append("path").datum({type:"Sphere"}).attr("d",path).attr("fill","#031828").attr("stroke","#0a2030").attr("stroke-width",.5);
+  svg.append("path").datum(d3.geoGraticule10?d3.geoGraticule10():d3.geoGraticule()()).attr("class","graticule").attr("d",path);
+  const zoomG=svg.append("g").attr("id","wZoomG");
+  const zoom=d3.zoom().scaleExtent([1,12]).on("zoom",e=>zoomG.attr("transform",e.transform));
+  svg.call(zoom);
+  svg.on("dblclick.zoom",()=>svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity));
+  try{
+    wData=await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json");
+    const feats=topojson.feature(wData,wData.objects.countries).features;
+    zoomG.append("g").attr("id","countries-g").selectAll("path").data(feats).join("path")
+      .attr("class",d=>`country c${d.id}`).attr("d",path)
+      .attr("fill",d=>{const k=n2i[d.id];return k?cColor(k,0):"#1a3020";})
+      .on("mouseover",(ev,d)=>{const k=n2i[d.id];if(k&&cData[k]){const p=(floodPct(k,curLvl)*100).toFixed(1);showTip(ev,`${cData[k].f} ${cData[k].n}: ${p}% sommerso · ${fmt(Math.round(cData[k].a*floodPct(k,curLvl)))} km²`);}})
+      .on("mouseout",hideTip)
+      .on("click",(ev,d)=>{if(d.id==380||n2i[d.id]==="ITA"){switchMap('i',null);}});
+    zoomG.append("path").datum(topojson.mesh(wData,wData.objects.countries,(a,b)=>a!==b)).attr("fill","none").attr("stroke","#061422").attr("stroke-width",.2).attr("d",path);
+    const wCits=[
+      {n:"Venezia",lo:12.34,la:45.44,r:0.3},{n:"Amsterdam",lo:4.9,la:52.4,r:0.5},
+      {n:"Dhaka",lo:90.4,la:23.7,r:1.0},{n:"Miami",lo:-80.2,la:25.8,r:1.5},
+      {n:"Bangkok",lo:100.5,la:13.8,r:2.0},{n:"Shanghai",lo:121.5,la:31.2,r:3.0},
+      {n:"Ho Chi Minh",lo:106.7,la:10.8,r:2.0},{n:"Jakarta",lo:106.8,la:-6.2,r:1.5},
+      {n:"Cairo",lo:31.2,la:30.1,r:2.5},{n:"New Orleans",lo:-90.1,la:29.9,r:1.0},
+      {n:"Mumbai",lo:72.88,la:19.08,r:2.0},{n:"Tokyo",lo:139.69,la:35.69,r:3.0},
+      {n:"New York",lo:-74.0,la:40.71,r:5.0},{n:"Londra",lo:-0.12,la:51.51,r:5.0},
+    ];
+    const cg=zoomG.append("g").attr("id","wcities");
+    wCits.forEach(c=>{const[x,y]=proj([c.lo,c.la]);if(!x||!y)return;
+      cg.append("circle").attr("class",`wc wc_${c.n.replace(/\s/g,'_')}`).attr("cx",x).attr("cy",y).attr("r",3).attr("fill","#ffaa00").attr("opacity",.85).on("mouseover",ev=>showTip(ev,`${c.n} — a rischio da +${c.r}m`)).on("mouseout",hideTip);
+    });
+    el.classList.add("loaded");
+  }catch(e){document.getElementById("wLoad").textContent="⚠ Connessione richiesta. Aprire online.";document.getElementById("wLoad").style.opacity="1";}
+}
+
+// ══════════════════════════════════════════════════════
+// DEM FLOOD LAYER — rendering realistico basato su elevazione
+// ══════════════════════════════════════════════════════
+const FloodDEMLayer = L.GridLayer.extend({
+  options:{tileSize:256,maxNativeZoom:13,maxZoom:18,updateWhenZooming:false,updateWhenIdle:true},
+  _seaLevel:0,
+  setSeaLevel(m){
+    this._seaLevel=m;
+    for(const key in this._tiles){
+      const t=this._tiles[key];
+      if(t.el&&t.el._elev) this._paint(t.el);
+    }
+  },
+  createTile(coords,done){
+    const canvas=document.createElement('canvas');
+    canvas.width=canvas.height=256;
+    const nz=this.options.maxNativeZoom;
+    const z=Math.min(coords.z,nz);
+    const s=Math.pow(2,coords.z-z);
+    const tx=Math.floor(coords.x/s),ty=Math.floor(coords.y/s);
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.onload=()=>{
+      const tmp=document.createElement('canvas');
+      tmp.width=tmp.height=256;
+      const tc=tmp.getContext('2d');
+      tc.drawImage(img,0,0);
+      const cropSz=Math.max(1,Math.round(256/s));
+      const ox=Math.round((coords.x/s-tx)*256);
+      const oy=Math.round((coords.y/s-ty)*256);
+      const cw=Math.min(cropSz,256-ox),ch=Math.min(cropSz,256-oy);
+      if(cw<1||ch<1){done(null,canvas);return;}
+      const src=tc.getImageData(ox,oy,cw,ch);
+      const n=src.width*src.height;
+      const elev=new Float32Array(n);
+      for(let i=0;i<n;i++){
+        const r=src.data[i*4],g=src.data[i*4+1],b=src.data[i*4+2];
+        elev[i]=(r*256+g+b/256)-32768;
+      }
+      canvas._elev=elev;canvas._ew=src.width;canvas._eh=src.height;
+      this._paint(canvas);
+      done(null,canvas);
+    };
+    img.onerror=()=>done(null,canvas);
+    img.src=`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${tx}/${ty}.png`;
+    return canvas;
+  },
+  _paint(canvas){
+    const ctx=canvas.getContext('2d');
+    ctx.clearRect(0,0,256,256);
+    const m=this._seaLevel;
+    if(m<=0||!canvas._elev)return;
+    const elev=canvas._elev,ew=canvas._ew,eh=canvas._eh;
+    const out=ctx.createImageData(256,256);
+    const d=out.data;
+    for(let py=0;py<256;py++){
+      const ey=Math.min(eh-1,Math.floor(py*eh/256));
+      for(let px=0;px<256;px++){
+        const ex=Math.min(ew-1,Math.floor(px*ew/256));
+        const e=elev[ey*ew+ex];
+        if(e>=0&&e<m){
+          const depth=m-e;
+          const t=Math.min(1,depth/Math.max(m*0.5,3));
+          const idx=(py*256+px)*4;
+          d[idx]=5;
+          d[idx+1]=Math.round(110-40*t);
+          d[idx+2]=Math.round(200+40*t);
+          d[idx+3]=Math.round(120+80*t);
+        }
+      }
+    }
+    ctx.putImageData(out,0,0);
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// MAPPA ITALIA — Leaflet + Satellite + DEM Flood
+// ══════════════════════════════════════════════════════
+async function initItaly(){
+  if(italyInited)return;italyInited=true;
+  await new Promise(r=>setTimeout(r,150));
+  const el=document.getElementById('italyMap');
+  italyMap=L.map(el,{center:[41.9,12.5],zoom:6,zoomControl:true,minZoom:5,maxZoom:18});
+  // Panes
+  italyMap.createPane('labelsPane');
+  italyMap.getPane('labelsPane').style.zIndex=650;
+  italyMap.getPane('labelsPane').style.pointerEvents='none';
+  italyMap.createPane('floodPane');
+  italyMap.getPane('floodPane').style.zIndex=450;
+  italyMap.createPane('cityPane');
+  italyMap.getPane('cityPane').style.zIndex=500;
+  // Satellite base
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+    attribution:'Esri · Leaflet · DEM: AWS Terrain',maxZoom:18
+  }).addTo(italyMap);
+  // DEM Flood layer
+  floodDEMLayer=new FloodDEMLayer({pane:'floodPane'}).addTo(italyMap);
+  // Labels
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{
+    maxZoom:18,opacity:0.7,pane:'labelsPane'
+  }).addTo(italyMap);
+  // Regioni
+  try{
+    const url='https://cdn.jsdelivr.net/gh/openpolis/geojson-italy@master/geojson/limits_IT_regions.geojson';
+    const regGeo=await fetch(url).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
+    italyRegionsGeo=regGeo;
+    regLayer=L.geoJSON(regGeo,{
+      style:f=>{
+        const nm=(f.properties.reg_name||f.properties.den_reg||f.properties.name||'').toLowerCase();
+        const r=IT_REGIONS.find(rg=>nm.includes(rg.key));
+        return{color:'#00ddff',weight:1,fillColor:'transparent',fillOpacity:0};
+      },
+      onEachFeature:(f,layer)=>{
+        const nm=f.properties.reg_name||f.properties.den_reg||f.properties.name||'';
+        const r=IT_REGIONS.find(rg=>nm.toLowerCase().includes(rg.key));
+        layer.bindTooltip(r?`<b>${nm}</b><br>Soglia: +${r.threshold}m · ${fmt(r.coastKm2)} km² a rischio`:nm,{className:'dark-tooltip',sticky:true});
+      }
+    }).addTo(italyMap);
+  }catch(e){console.warn('Regioni fallback',e);}
+  // Città
+  cityMkrs=[];
+  iCities.forEach(c=>{
+    const mk=L.circleMarker([c.la,c.lo],{radius:c.imp?8:5,fillColor:'#ffaa00',color:'#000',weight:2,fillOpacity:0.95,pane:'cityPane'}).addTo(italyMap);
+    mk.bindTooltip(`<b>${c.n}</b> · ${c.e}m s.l.m.`,{className:'dark-tooltip',direction:'top',offset:[0,-8],permanent:c.imp});
+    cityMkrs.push({m:mk,c});
+  });
+  document.getElementById("iPanel").classList.add("loaded");
+  document.getElementById("iLegend").style.display="flex";
+  setTimeout(()=>italyMap.invalidateSize(),200);
+  updateItalyMap(curLvl);
+}
+// ══════════════════════════════════════════════════════
+// SWITCH TAB
+// ══════════════════════════════════════════════════════
+function switchMap(tab,btn){
+  curTab=tab;
+  document.querySelectorAll('.mtab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.mtab').forEach(b=>{if((tab==='w'&&b.textContent.includes('MONDO'))||(tab==='i'&&b.textContent.includes('ITALIA')))b.classList.add('on');});
+  document.getElementById('wPanel').classList.toggle('on',tab==='w');
+  document.getElementById('iPanel').classList.toggle('on',tab==='i');
+  document.getElementById('navBack').classList.toggle('on',tab==='i');
+  if(tab==='i'){if(!italyInited)initItaly();else{updateItalyMap(curLvl);setTimeout(()=>{if(italyMap)italyMap.invalidateSize();},150);}}
+}
+
+// ══════════════════════════════════════════════════════
+// SCENARIO SELECTOR
+// ══════════════════════════════════════════════════════
+function pickType(type,btn){
+  selType=type;
+  document.querySelectorAll('.scen-row:first-child .scen-btn').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  applyScenario();
+}
+function pickTime(year,btn){
+  selTime=year;
+  document.querySelectorAll('.scen-row:last-child .scen-btn').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  applyScenario();
+}
+function applyScenario(){
+  if(!selType||!selTime)return;
+  const m=SCEN_MATRIX[selType][selTime];
+  if(m===undefined)return;
+  const from=curLvl,to=m,dur=800,t0=Date.now();
+  if(isAnim)toggleAnim();
+  function step(){const prog=Math.min((Date.now()-t0)/dur,1);const e=1-Math.pow(1-prog,3);const v=from+(to-from)*e;document.getElementById("sl").value=v;update(v);if(prog<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+}
+function scenLabel(){
+  if(!selType||!selTime)return curLvl>0.05?`+${curLvl.toFixed(2)}m`:"Baseline 2024";
+  return `${SCEN_NAMES[selType]} — ${TIME_NAMES[selTime]}`;
+}
+
+// ══════════════════════════════════════════════════════
+// UPDATE GLOBALE
+// ══════════════════════════════════════════════════════
+function update(m){
+  curLvl=m;
+  const lEl=document.getElementById("lBig");
+  lEl.innerHTML=`+${m.toFixed(1)}<span style="font-size:18px">m</span>`;
+  lEl.className="lbig"+(m>=5?" hot":"");
+  document.getElementById("sLvl").textContent=`+${m.toFixed(2)} m`;
+  document.getElementById("sLvl").style.color=m>=5?"var(--danger)":m>=1?"#ff8800":"var(--accent)";
+  const g={km2:Math.round(lerp(m,gLevels,"m","km2")),pop:Math.round(lerp(m,gLevels,"m","pop"))};
+  document.getElementById("sArea").textContent=fmt(g.km2)+" km²";
+  document.getElementById("sPop").textContent=g.pop>0?fmt(g.pop*1e6):"0";
+  document.getElementById("sIta").textContent=fmt(italyKm2(m))+" km²";
+  document.getElementById("sScen").textContent=scenLabel();
+  // Mondo
+  if(wData){
+    d3.select("#countries-g").selectAll("path").attr("fill",d=>{const k=n2i[d.id];return k?cColor(k,m):"#1a3020";});
+    const risks={Venezia:.3,Amsterdam:.5,Dhaka:1,Miami:1.5,Bangkok:2,Shanghai:3,Ho_Chi_Minh:2,Jakarta:1.5,Cairo:2.5,New_Orleans:1,Mumbai:2,Tokyo:3,New_York:5,Londra:5};
+    Object.entries(risks).forEach(([nm,r])=>d3.selectAll(`.wc_${nm}`).attr("fill",m>=r?"#00c8ff":"#ffaa00"));
+  }
+  if(italyInited)updateItalyMap(m);
+  updateTables(m);
+}
+
+function updateItalyMap(m){
+  if(!italyMap)return;
+  // DEM flood layer
+  if(floodDEMLayer) floodDEMLayer.setSeaLevel(m);
+  // Città
+  cityMkrs.forEach(({m:mk,c})=>{
+    const fl=c.e<=m;
+    mk.setStyle({fillColor:fl?'#00c8ff':'#ffaa00',color:fl?'#003355':'#000',radius:fl?(c.imp?10:7):(c.imp?8:5)});
+    mk.setTooltipContent(`<b>${c.n}</b> · ${c.e}m s.l.m.<br>${fl?'<span style="color:#ff3030">⚠ SOMMERSA</span>':'✓ Sicura'}`);
+  });
+  // Regioni — bordi
+  if(regLayer){
+    regLayer.eachLayer(layer=>{
+      if(!layer.feature)return;
+      const nm=(layer.feature.properties.reg_name||layer.feature.properties.den_reg||layer.feature.properties.name||'').toLowerCase();
+      const r=IT_REGIONS.find(rg=>nm.includes(rg.key));if(!r)return;
+      const on=m>=r.threshold;
+      layer.setStyle({weight:on?1.5:1,color:on?'#ff6600':'#00ddff',fillOpacity:0});
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// TABELLE
+// ══════════════════════════════════════════════════════
+function updateTables(m){
+  // Top 25 nazioni
+  const sorted=Object.entries(cData).map(([k,d])=>({k,d,p:floodPct(k,m),km2:Math.round(d.a*floodPct(k,m))})).filter(x=>x.p>.0005).sort((a,b)=>b.km2-a.km2).slice(0,25);
+  document.getElementById("cList").innerHTML=sorted.length
+    ?sorted.map(({k,d,p,km2},i)=>{const pct=(p*100).toFixed(1);const col=p>.5?"var(--r4)":p>.2?"var(--r3)":p>.05?"var(--r2)":p>.01?"var(--r1)":"var(--r0)";
+      return`<div class="crow"><span class="rank">${i+1}</span><span>${d.f}</span><span>${d.n}</span><div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${col}"></div></div><span style="color:${col};text-align:right;font-size:9px">${pct}%<br>${fmt(km2)}km²</span></div>`;}).join("")
+    :'<div style="color:var(--dim);font-size:10px">Sposta il cursore per attivare</div>';
+
+  // Regioni italiane (ordinate per km² a rischio)
+  const regSorted=IT_REGIONS.map(r=>({...r,km2:regionFloodKm2(r,m),pct:regionFloodPct(r,m)})).sort((a,b)=>b.km2-a.km2);
+  document.getElementById("zList").innerHTML=regSorted.map(r=>{
+    const active=m>=r.threshold;const col=r.pct>=.20?"#ff3030":r.pct>=.10?"#ff8800":r.pct>=.03?"#ddaa00":"var(--dim)";
+    return`<div class="zi ${active?"sub":""}"><span class="zn">${r.name} ${active?"⚠":""}</span><span class="zs" style="color:${col}">${r.km2>0?fmt(r.km2)+"km²":"—"} ${active?"(+"+r.threshold+"m)":"+"+r.threshold+"m"}</span></div>`;
+  }).join("");
+
+  // Continenti
+  const contData=Object.entries(CONT_META).map(([code,meta])=>{
+    let totArea=0,totFlood=0;
+    meta.countries.forEach(iso=>{if(cData[iso]){totArea+=cData[iso].a;totFlood+=cData[iso].a*floodPct(iso,m);}});
+    return{code,meta,totArea,totFlood,pct:totArea>0?totFlood/totArea:0};
+  }).sort((a,b)=>b.totFlood-a.totFlood);
+  document.getElementById("contList").innerHTML=contData.map((c,i)=>{
+    const col=c.pct>.05?"var(--r3)":c.pct>.02?"var(--r2)":c.pct>.005?"var(--r1)":"var(--r0)";
+    return`<div class="cont-row"><span class="rank">${i+1}</span><span>${c.meta.f} ${c.meta.n}</span><div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(c.pct*100*5,100)}%;background:${col}"></div></div><span style="color:${col};font-size:9px;text-align:right">${fmt(Math.round(c.totFlood))}km²</span></div>`;
+  }).join("");
+}
+
+// ══════════════════════════════════════════════════════
+// ANIMAZIONE
+// ══════════════════════════════════════════════════════
+function toggleAnim(){
+  isAnim=!isAnim;document.getElementById("animBtn").textContent=isAnim?"⏸ PAUSA":"▶ ANIMAZIONE";
+  if(isAnim){let v=curLvl;function step(){if(!isAnim)return;v+=0.12;if(v>65)v=0;document.getElementById("sl").value=v;update(v);animId=setTimeout(step,60);}step();}
+  else clearTimeout(animId);
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded",async()=>{
+  document.getElementById("sl").addEventListener("input",e=>{
+    selType=null;selTime=null;
+    document.querySelectorAll(".scen-btn").forEach(b=>b.classList.remove("on"));
+    update(parseFloat(e.target.value));
+  });
+  await initWorld();update(0);updateTables(0);
+});
+</script>
+</body>
+</html>

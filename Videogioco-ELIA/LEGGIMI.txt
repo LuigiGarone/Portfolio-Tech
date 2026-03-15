@@ -1,0 +1,14 @@
+NeonBreak: Cyberpunk Arkanoid by Elia Garone Lammardo
+==========================
+
+ISTRUZIONI PER AVVIARE IL GIOCO:
+
+1. Per avviare il gioco basta entrare nella cartella src e cliccare due volte su index.fixed.html
+
+CONTROLLI:
+- Muovi la racchetta: Frecce SINISTRA e DESTRA
+- Lancia la palla: SPAZIO
+- Funzioni segrete
+- Pausa: ESC
+
+Buon divertimento!

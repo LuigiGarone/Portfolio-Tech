@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Estrazione Vincitore Pasqua</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: #f0f0f0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #app {
+            background-color: white;
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #countdown, #winner {
+            font-size: 48px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        #winner {
+            color: green;
+        }
+        #debugInfo {
+            margin: 15px 0;
+            text-align: left;
+            font-size: 12px;
+            color: #666;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: block;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        #participantsInfo {
+            padding: 10px;
+            background-color: #f0fff0;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 24px;
+        }
+        .error {
+            color: #d32f2f;
+            background-color: #ffeaea;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: left;
+            border-left: 4px solid #d32f2f;
+        }
+        .success {
+            color: #388e3c;
+            background-color: #eaffea;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #388e3c;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none;
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #debugToggle {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ddd;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .version-info {
+            font-size: 10px;
+            color: #999;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>🐰 Estrazione Vincitore Pasqua 🎉</h1>
+        <button id="selectFile">
+            <div class="button-content">
+                <span class="loading hidden" id="selectLoading"></span>
+                <span>Seleziona File Excel</span>
+            </div>
+        </button>
+        
+        <div id="participantsInfo"></div>
+        
+        <button id="startExtraction" disabled>
+            <div class="button-content">
+                <span class="loading hidden" id="extractionLoading"></span>
+                <span>Avvia Estrazione</span>
+            </div>
+        </button>
+        
+        <div id="countdown"></div>
+        <div id="winner"></div>
+        
+        <div id="debugInfo" style="display: block;">
+            <button id="debugToggle">Nascondi</button>
+            Debug Info:
+        </div>
+        
+        <div class="version-info">v1.0.1</div>
+    </div>
+
+    <script>
+        // Gestione errori globali
+        window.addEventListener('error', function(e) {
+            showError('Errore di sistema: ' + e.message);
+            console.error('Errore globale:', e);
+        });
+
+        const { ipcRenderer } = require('electron');
+        let participants = [];
+
+        // Elementi DOM
+        const selectFileBtn = document.getElementById('selectFile');
+        const startExtractionBtn = document.getElementById('startExtraction');
+        const debugInfoDiv = document.getElementById('debugInfo');
+        const participantsInfoDiv = document.getElementById('participantsInfo');
+        const countdownDiv = document.getElementById('countdown');
+        const winnerDiv = document.getElementById('winner');
+        const selectLoading = document.getElementById('selectLoading');
+        const extractionLoading = document.getElementById('extractionLoading');
+        const debugToggleBtn = document.getElementById('debugToggle');
+        
+        // Inizializzazione
+        let debugVisible = true;
+        
+        // Toggle debug info
+        debugToggleBtn.addEventListener('click', () => {
+            const content = debugInfoDiv.querySelector('br') ? 
+                            debugInfoDiv.innerHTML.split('<br>')[0] : 
+                            debugInfoDiv.innerHTML;
+            
+            if (debugVisible) {
+                debugInfoDiv.innerHTML = content;
+                debugInfoDiv.style.height = "30px";
+                debugToggleBtn.textContent = "Mostra";
+                debugVisible = false;
+            } else {
+                debugInfoDiv.style.height = "200px";
+                debugToggleBtn.textContent = "Nascondi";
+                debugVisible = true;
+            }
+        });
+        
+        // Funzioni di utilità per l'interfaccia
+        function showLoading(button, loadingElement) {
+            button.disabled = true;
+            loadingElement.classList.remove('hidden');
+        }
+        
+        function hideLoading(button, loadingElement, enableButton = true) {
+            loadingElement.classList.add('hidden');
+            button.disabled = !enableButton;
+        }
+        
+        function showSuccess(message) {
+            participantsInfoDiv.innerHTML = `<div class="success">${message}</div>`;
+        }
+        
+        function showError(message) {
+            participantsInfoDiv.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        // Funzione di log per debugging
+        function logDebug(message) {
+            console.log(message);
+            const timestamp = new Date().toLocaleTimeString();
+            debugInfoDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugInfoDiv.scrollTop = debugInfoDiv.scrollHeight; // Auto-scroll
+        }
+        
+        logDebug('Applicazione inizializzata correttamente');
+
+        selectFileBtn.addEventListener('click', async () => {
+            logDebug('🔍 Cliccato su Seleziona File');
+
+            // Reset dei messaggi e mostra indicatore di caricamento
+            debugInfoDiv.innerHTML = '<button id="debugToggle">Nascondi</button>Debug Info:';
+            document.getElementById('debugToggle').addEventListener('click', () => {
+                if (debugVisible) {
+                    debugInfoDiv.style.height = "30px";
+                    document.getElementById('debugToggle').textContent = "Mostra";
+                    debugVisible = false;
+                } else {
+                    debugInfoDiv.style.height = "200px";
+                    document.getElementById('debugToggle').textContent = "Nascondi";
+                    debugVisible = true;
+                }
+            });
+            
+            participantsInfoDiv.textContent = '';
+            startExtractionBtn.disabled = true;
+            winnerDiv.textContent = '';
+            showLoading(selectFileBtn, selectLoading);
+
+            try {
+                logDebug('Inizio selezione file...');
+                const filePath = await ipcRenderer.invoke('select-file');
+                
+                if (!filePath) {
+                    logDebug('❌ Nessun file selezionato');
+                    hideLoading(selectFileBtn, selectLoading);
+                    return;
+                }
+                
+                logDebug(`📁 Percorso file: ${filePath}`);
+                logDebug(`🔎 Caricamento file in corso...`);
+                
+                // Aggiunge maggiori dettagli per il debug
+                logDebug(`Percorso tipo: ${typeof filePath}`);
+                logDebug(`Percorso lunghezza: ${filePath.length}`);
+                
+                // Invia richiesta di lettura con log dettagliati
+                const result = await ipcRenderer.invoke('read-excel', filePath);
+                
+                // Nasconde indicatore di caricamento
+                hideLoading(selectFileBtn, selectLoading);
+                
+                // Usa un approccio più sicuro per mostrare il risultato
+                if (Array.isArray(result)) {
+                    logDebug(`📊 Risultato: Array con ${result.length} elementi`);
+                    participants = result;
+                    logDebug(`👥 Trovati ${participants.length} partecipanti`);
+                    
+                    showSuccess(`Caricati ${participants.length} partecipanti`);
+                    startExtractionBtn.disabled = false;
+                } else if (result && result.error) {
+                    // Mostra messaggio di errore
+                    logDebug(`❌ Errore: ${result.error}`);
+                    showError(result.error);
+                    
+                    // Se è disponibile lo stack trace, mostralo nel debug
+                    if (result.stack) {
+                        logDebug(`Stack trace: ${result.stack}`);
+                    }
+                } else {
+                    logDebug('❌ Risultato non valido');
+                    showError('Formato del file non valido o non supportato');
+                }
+            } catch (error) {
+                hideLoading(selectFileBtn, selectLoading);
+                logDebug(`💥 Errore imprevisto: ${error.message}`);
+                if (error.stack) {
+                    logDebug(`Stack trace: ${error.stack}`);
+                }
+                showError(`Errore imprevisto: ${error.message}`);
+            }
+        });
+
+        startExtractionBtn.addEventListener('click', () => {
+            startExtraction();
+        });
+
+        function startExtraction() {
+            // Mostra indicatore di caricamento
+            showLoading(startExtractionBtn, extractionLoading);
+            
+            // Reset dei valori precedenti
+            logDebug('🎲 Avvio estrazione casuale...');
+            participantsInfoDiv.textContent = '';
+            winnerDiv.textContent = '';
+            
+            // Imposta il countdown
+            let countdown = 10;
+            countdownDiv.textContent = countdown;
+            logDebug(`Countdown iniziato: ${countdown} secondi`);
+
+            const timer = setInterval(() => {
+                countdown--;
+                countdownDiv.textContent = countdown;
+
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    selectWinner();
+                }
+            }, 1000);
+        }
+
+        function selectWinner() {
+            // Nasconde l'indicatore di caricamento
+            hideLoading(startExtractionBtn, extractionLoading);
+            
+            if (participants && participants.length > 0) {
+                // Seleziona il vincitore casualmente
+                const randomIndex = Math.floor(Math.random() * participants.length);
+                const winner = participants[randomIndex];
+                
+                // Mostra il vincitore con animazione
+                logDebug(`🏆 Vincitore estratto: ${winner}`);
+                winnerDiv.innerHTML = `<span style="color: green; font-size: 48px;">🏆 ${winner} 🏆</span>`;
+                showSuccess(`Estrazione completata! Il vincitore è ${winner}`);
+                
+                // Effetti audio (opzionale)
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8OC/dDMaNHfH7OpeEFl1AA0XLURfb36toIlYJicpPE1JTrr66sOXdcT95LNclP7noGVFftDGmP/+h2ZVC67ivovGyzta0F2FpqMaWinKThjXezYqWJy6/6kDnIK1gVba1GpIm/hCVuivHJmh9cV1bRSyX+2v6bUXvPX4qe3g/WrP0fraVvDZdaxhF8pShWVnaVyHT1E9FI/6qXVq5TZcuP+a1bz2/xBSI/+vEqAg/S0Xt4Lr8jTytVyL3sWn/nicg8PGq3JWiDiXijI+VC0sMmSQz/TP78KhJ7PeuPvx1t5Ve+jYaWNWhRTF0I7nu+vn9//GTUFeck0dZ3+++vz/+vz/80gWeFJraU2Z98D7//r8//f//4IaEP3////////////z77+SfnNfPx3v//+ylbBp4aNOO9P//3ghC+rXv+//7Ljfz7EH1K5MCNCBM57sL1D//+T47cmm6//p//8lu8y05///8B1LhqKvcFr/////7P////rMuP////////fh2v//+vwSDf///////0WQp4V0E/////////////zGQf///PH/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+vz/////////+vz/////////+vz/////////+vz/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+vz/////////+vz/////////+vz/////////+vz/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+vz/////////+vz/////////+vz/////////+vz/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9/L3QSX8+vz/9fb5+vz/+vz/+vz/+vz/+vz/////////////+vz/////////+vz/////////+vz/////////+vz/////////////+vz/////////////+vz//Pr8/////UUq/Pr8//z6/P/8+vz///76/P////z6/P////z6/P/8+vz///76/P/8+vz/+pcy+vz///76/P/8+vz///76/P////z6/P////z6/P/8+vz///76/P////z6/P/8+vz//Pr8///pXfz6/P/8+vz//Pr8///U0tz9+/v9+fT5/fn0+f359Pn9+fT5/fn0+f359P/6+/nz+vT5+fT5/fn0+f359Pn9+fT5/fn0+f359Pn9+/v99fb9/fn0+f/6+/nz+vT58uvs9fX59Pn9+fT5/fn0+f359Pn58fj/+p+K8+Li9P//+Pv/9Pb59Pb59Pb59Pb59Pb59Pb59Pb59Pb5wX339Pb59Pb59Pb59Pb59Pb59Pb59Pb59Pb59Pb59Pb59Pb59Pb5gTb39Pf59Pb59Pb59Pb59Pr79v/08vj/9PL4//Ty+P/08vj/9PL4//Ty+P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz//Pr8//z6/P/8+vz/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/P/6+/z/+vv8//r7/A==');
+                    audio.play();
+                } catch (e) {
+                    // Ignora errori nell'audio
+                }
+            } else {
+                logDebug('⛔ Nessun partecipante trovato');
+                winnerDiv.textContent = 'Nessun partecipante trovato';
+                showError('Impossibile estrarre un vincitore: non ci sono partecipanti');
+            }
+        }
+    </script>
+</body>
+</html>

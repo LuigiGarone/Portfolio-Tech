@@ -1,0 +1,14 @@
+# Temp files
+_p*.txt
+*.tmp
+
+# OS
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
