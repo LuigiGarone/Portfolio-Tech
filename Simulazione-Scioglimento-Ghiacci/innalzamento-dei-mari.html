@@ -594,39 +594,17 @@ function applyScenario(){
   function step(){const prog=Math.min((Date.now()-t0)/dur,1);const e=1-Math.pow(1-prog,3);const v=from+(to-from)*e;document.getElementById("sl").value=v;update(v);if(prog<1)requestAnimationFrame(step);}
   requestAnimationFrame(step);
 }
-function invertScenario(type,m){
-  // Dato un livello m, trova a quale anno lo scenario 'type' lo raggiunge (interpolazione)
-  const times=[2050,2100,2150,2200,2300,99999];
-  const mat=SCEN_MATRIX[type];
-  if(m<=0.01) return {year:"Oggi",level:0};
-  if(m>=65) return {year:"Sciogl. totale",level:65};
-  for(let i=0;i<times.length;i++){
-    if(m<=mat[times[i]]){
-      if(i===0) return {year:"<"+times[0],level:mat[times[0]]};
-      const prev=times[i-1],cur=times[i];
-      const t=(m-mat[prev])/(mat[cur]-mat[prev]);
-      const yr=Math.round(prev+(cur-prev)*t);
-      return {year:cur===99999?(yr>3000?"~"+Math.round(yr/1000)+"000+":"~"+yr):"~"+yr,level:m};
-    }
-  }
-  return {year:">10000",level:65};
-}
 function updateCompare(m){
   const el=document.getElementById("sCompare");if(!el)return;
+  const label=document.getElementById("sCompareLabel");
   const active=selType||'prob';
-  if(selTime){
-    // Orizzonte selezionato: mostra livelli dei 3 scenari per quell'anno
-    const vo=SCEN_MATRIX.ottim[selTime],vp=SCEN_MATRIX.prob[selTime],vx=SCEN_MATRIX.pessim[selTime];
-    el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 +${vo.toFixed(2)}m</span>`+
-      `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 +${vp.toFixed(2)}m</span>`+
-      `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 +${vx.toFixed(2)}m</span>`;
-  } else {
-    // Slider manuale: dato il livello, mostra QUANDO ogni scenario lo raggiunge
-    const ro=invertScenario('ottim',m),rp=invertScenario('prob',m),rx=invertScenario('pessim',m);
-    el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 ${ro.year}</span>`+
-      `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 ${rp.year}</span>`+
-      `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 ${rx.year}</span>`;
-  }
+  const time=selTime||2100;
+  const vo=SCEN_MATRIX.ottim[time],vp=SCEN_MATRIX.prob[time],vx=SCEN_MATRIX.pessim[time];
+  const tName=time===99999?"Sciogl. totale":time;
+  if(label) label.textContent=`Scenari SSP al ${tName}`;
+  el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 +${vo.toFixed(2)}m</span>`+
+    `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 +${vp.toFixed(2)}m</span>`+
+    `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 +${vx.toFixed(2)}m</span>`;
 }
 
 // ══════════════════════════════════════════════════════
