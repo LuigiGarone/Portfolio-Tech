@@ -594,14 +594,37 @@ function applyScenario(){
   function step(){const prog=Math.min((Date.now()-t0)/dur,1);const e=1-Math.pow(1-prog,3);const v=from+(to-from)*e;document.getElementById("sl").value=v;update(v);if(prog<1)requestAnimationFrame(step);}
   requestAnimationFrame(step);
 }
+function lerpScen(type,t){
+  // Interpola il livello dello scenario 'type' al tempo frazionario t (0=2050,1=2100,...)
+  const times=[2050,2100,2150,2200,2300,99999];
+  const mat=SCEN_MATRIX[type];
+  if(t<=0) return mat[2050];
+  if(t>=times.length-1) return mat[99999];
+  const i=Math.floor(t),f=t-i;
+  return mat[times[i]]+(mat[times[Math.min(i+1,times.length-1)]]-mat[times[i]])*f;
+}
+function findTimeIndex(type,m){
+  // Trova l'indice frazionario (tra i punti della matrice) per un dato livello
+  const times=[2050,2100,2150,2200,2300,99999];
+  const mat=SCEN_MATRIX[type];
+  if(m<=mat[2050]) return (m/mat[2050])*0; // prima del 2050
+  for(let i=1;i<times.length;i++){
+    if(m<=mat[times[i]]){
+      return (i-1)+(m-mat[times[i-1]])/(mat[times[i]]-mat[times[i-1]]);
+    }
+  }
+  return times.length-1;
+}
 function updateCompare(m){
   const el=document.getElementById("sCompare");if(!el)return;
   const label=document.getElementById("sCompareLabel");
   const active=selType||'prob';
-  const time=selTime||2100;
-  const vo=SCEN_MATRIX.ottim[time],vp=SCEN_MATRIX.prob[time],vx=SCEN_MATRIX.pessim[time];
-  const tName=time===99999?"Sciogl. totale":time;
-  if(label) label.textContent=`Scenari SSP al ${tName}`;
+  // Il livello corrente = scenario attivo. Trovo il punto temporale, poi calcolo gli altri.
+  const tIdx=findTimeIndex(active,m);
+  const vo=lerpScen('ottim',tIdx);
+  const vp=lerpScen('prob',tIdx);
+  const vx=lerpScen('pessim',tIdx);
+  if(label) label.textContent="Scenari SSP a confronto";
   el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 +${vo.toFixed(2)}m</span>`+
     `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 +${vp.toFixed(2)}m</span>`+
     `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 +${vx.toFixed(2)}m</span>`;
