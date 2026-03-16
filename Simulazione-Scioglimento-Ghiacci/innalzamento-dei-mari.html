@@ -20,10 +20,8 @@ header{text-align:center;padding:18px 20px 12px;border-bottom:1px solid var(--bo
 h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,5vw,56px);letter-spacing:6px;text-shadow:0 0 50px rgba(0,200,255,0.5);}
 .hrow{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:6px;}
 .hrow p{color:var(--dim);font-size:11px;letter-spacing:1.5px;}
-.author-block{display:flex;align-items:center;gap:8px;font-size:10px;color:#3a6888;letter-spacing:1px;}
-.author-block img{height:18px;width:18px;border-radius:3px;opacity:.7;}
-.author-block strong{color:#5a90a8;}
-.author-block .role{color:#2e5a70;font-size:9px;}
+[data-tip]{position:relative;cursor:help;}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:rgba(2,12,26,.97);border:1px solid var(--accent);color:var(--text);padding:8px 12px;border-radius:6px;font-size:11px;font-family:'Inconsolata',monospace;white-space:normal;width:max-content;max-width:300px;z-index:1000;line-height:1.5;box-shadow:0 4px 20px rgba(0,200,255,.15);pointer-events:none;letter-spacing:normal;text-transform:none;font-weight:400;}
 .stats{display:flex;justify-content:space-around;flex-wrap:wrap;gap:6px;padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;}
 .si{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:110px;padding:6px 12px;background:rgba(0,200,255,.03);border:1px solid rgba(10,40,64,.5);border-radius:6px;}
 .sl{font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;}
@@ -75,18 +73,18 @@ svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing
 .zi:last-child{border-bottom:none;}.zi.sub{color:var(--water);}.zi .zn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.zi .zs{font-size:11px;color:var(--dim);flex-shrink:0;}.zi.sub .zs{color:var(--water);}
 .cont-row{display:grid;grid-template-columns:1.4em 1fr 65px 50px;gap:4px;padding:5px 0;border-bottom:1px solid rgba(10,40,64,.4);font-size:13px;align-items:center;}.cont-row:last-child{border-bottom:none;}
 .src{padding:8px 20px;background:var(--panel);border-top:1px solid var(--border);font-size:10px;color:var(--dim);line-height:1.8;flex-shrink:0;}.src strong{color:var(--text);}
-.footer-bar{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 20px;font-size:10px;color:var(--dim);border-top:1px solid var(--border);flex-shrink:0;}
-.footer-bar img{height:20px;width:20px;border-radius:3px;opacity:.6;}
-.footer-bar .footer-author{color:#4a7090;}.footer-bar .footer-author strong{color:#6aa0c0;}
-.footer-bar .footer-role{color:#3a6070;font-size:9px;}
-.footer-bar .footer-sep{color:var(--border);}
-.footer-bar .footer-tech{color:#3a5868;}
+.footer-bar{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px 24px;font-size:13px;color:var(--dim);border-top:1px solid var(--border);background:linear-gradient(180deg,transparent,rgba(0,180,255,.04));flex-shrink:0;}
+.footer-bar img{height:28px;width:28px;border-radius:4px;opacity:.7;transition:opacity .3s;}.footer-bar img:hover{opacity:1;}
+.footer-bar .footer-author{color:#5a90b0;font-size:14px;}.footer-bar .footer-author strong{color:#7ab8d8;}
+.footer-bar .footer-role{color:#4a7890;font-size:12px;}
+.footer-bar .footer-sep{color:var(--border);font-size:16px;}
+.footer-bar .footer-tech{color:#3a6878;font-size:11px;}
 .time-indicator{display:flex;align-items:center;gap:8px;margin-top:4px;}
 .time-badge{padding:4px 10px;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.15);border-radius:4px;font-size:11px;color:var(--accent);letter-spacing:1px;font-family:'Inconsolata',monospace;transition:all .4s;}
 .time-badge.hot{background:rgba(255,48,48,.06);border-color:rgba(255,48,48,.2);color:var(--danger);}
 .time-badge .time-icon{margin-right:4px;}
 #tip{position:fixed;background:rgba(2,12,26,.95);border:1px solid #0a2840;color:#ddeeff;padding:6px 12px;border-radius:5px;font-size:13px;font-family:'Inconsolata',monospace;pointer-events:none;z-index:999;display:none;max-width:340px;}
-@media(max-width:680px){.bot,.bot.three-col{grid-template-columns:1fr;}.lbig{font-size:34px;min-width:80px;}.scen-row{gap:3px;}.scen-btn{padding:4px 8px;font-size:10px;}.si{min-width:80px;padding:4px 6px;}.stats{gap:4px;padding:6px 10px;}.author-block{flex-direction:column;gap:2px;}}
+@media(max-width:680px){.bot,.bot.three-col{grid-template-columns:1fr;}.lbig{font-size:34px;min-width:80px;}.scen-row{gap:3px;}.scen-btn{padding:4px 8px;font-size:10px;}.si{min-width:80px;padding:4px 6px;}.stats{gap:4px;padding:6px 10px;}.footer-bar{flex-wrap:wrap;gap:8px;padding:10px 16px;}.footer-bar .footer-role{font-size:10px;}[data-tip]:hover::after{max-width:220px;font-size:10px;}}
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
 #italyMap{width:100%;height:100%;background:#020d1a;z-index:1;}
 .leaflet-container{background:#020d1a !important;font-family:'Inconsolata',monospace !important;}
@@ -102,17 +100,16 @@ svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing
 <header>
   <h1>🌊 INNALZAMENTO DEI MARI</h1>
   <div class="hrow">
-    <p>SIMULAZIONE INTERATTIVA — DATI: IPCC AR6 (2021) · NASA · NOAA · USGS · AntarcticGlaciers.org</p>
-    <span class="author-block"><img src="logika-icon.png" alt="Logika.studio"> <strong>Luigi Garone</strong> <span class="role">Full Stack Developer · Data Scientist & Analyst</span></span>
+    <p>SIMULAZIONE INTERATTIVA — DATI: <span data-tip="Intergovernmental Panel on Climate Change — Sesto Rapporto di Valutazione (2021). Il riferimento scientifico mondiale sul cambiamento climatico.">IPCC AR6</span> (2021) · NASA · NOAA · USGS · AntarcticGlaciers.org</p>
   </div>
 </header>
 <div class="stats">
-  <div class="si"><span class="sl">Livello</span><span class="sv" id="sLvl">+0.00 m</span></div>
-  <div class="si"><span class="sl">Superficie sommersa</span><span class="sv" id="sArea">0 km²</span></div>
-  <div class="si"><span class="sl">Popolazione a rischio</span><span class="sv hot" id="sPop">0</span></div>
-  <div class="si"><span class="sl">Italia sommersa</span><span class="sv" id="sIta">0 km²</span></div>
-  <div class="si"><span class="sl">Scenario</span><span class="sv" id="sScen" style="font-size:11px">Baseline 2024</span></div>
-  <div class="si"><span class="sl">Stima temporale</span><span class="sv" id="sTime" style="font-size:11px">Oggi</span></div>
+  <div class="si" data-tip="Innalzamento del livello del mare rispetto al livello attuale (2024). Range: 0–65 metri."><span class="sl">Livello</span><span class="sv" id="sLvl">+0.00 m</span></div>
+  <div class="si" data-tip="Superficie terrestre globale che verrebbe sommersa a questo livello. Basato su dati altimetrici USGS e NASA."><span class="sl">Superficie sommersa</span><span class="sv" id="sArea">0 km²</span></div>
+  <div class="si" data-tip="Stima della popolazione mondiale che vive nelle zone che verrebbero sommerse. Fonte: IPCC AR6 + proiezioni demografiche."><span class="sl">Popolazione a rischio</span><span class="sv hot" id="sPop">0</span></div>
+  <div class="si" data-tip="Superficie italiana sommersa, calcolata su 14 zone costiere e pianure con dati altimetrici reali."><span class="sl">Italia sommersa</span><span class="sv" id="sIta">0 km²</span></div>
+  <div class="si" data-tip="SSP = Shared Socioeconomic Pathways (Percorsi Socioeconomici Condivisi). Scenari IPCC che combinano emissioni, sviluppo e politiche climatiche."><span class="sl">Scenario</span><span class="sv" id="sScen" style="font-size:11px">Baseline 2024</span></div>
+  <div class="si" data-tip="Stima di quando questo livello potrebbe essere raggiunto nello scenario probabile (SSP2-4.5). Oltre i 7m si parla di migliaia di anni."><span class="sl">Stima temporale</span><span class="sv" id="sTime" style="font-size:11px">Oggi</span></div>
 </div>
 <div class="map-tabs">
   <div class="tabs-left">
@@ -159,19 +156,19 @@ svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing
   </div>
   <div class="scen-panel">
     <div class="scen-row">
-      <span class="scen-label">Scenario:</span>
-      <button class="scen-btn ottim" onclick="pickType('ottim',this)">🟢 Ottimistico (SSP1-2.6)</button>
-      <button class="scen-btn" onclick="pickType('prob',this)">🟡 Probabile (SSP2-4.5)</button>
-      <button class="scen-btn pessim" onclick="pickType('pessim',this)">🔴 Pessimistico (SSP5-8.5)</button>
+      <span class="scen-label" data-tip="SSP (Shared Socioeconomic Pathways): scenari IPCC basati su diverse traiettorie di emissioni globali e sviluppo economico.">Scenario:</span>
+      <button class="scen-btn ottim" onclick="pickType('ottim',this)" data-tip="SSP1-2.6: Sviluppo sostenibile, emissioni in forte calo. Forcing radiativo 2.6 W/m². Riscaldamento ~1.8°C al 2100.">🟢 Ottimistico (SSP1-2.6)</button>
+      <button class="scen-btn" onclick="pickType('prob',this)" data-tip="SSP2-4.5: Politiche attuali, emissioni moderate. Forcing radiativo 4.5 W/m². Riscaldamento ~2.7°C al 2100.">🟡 Probabile (SSP2-4.5)</button>
+      <button class="scen-btn pessim" onclick="pickType('pessim',this)" data-tip="SSP5-8.5: Sviluppo ad alta intensità fossile, emissioni in crescita. Forcing radiativo 8.5 W/m². Riscaldamento ~4.4°C al 2100.">🔴 Pessimistico (SSP5-8.5)</button>
     </div>
     <div class="scen-row">
-      <span class="scen-label">Orizzonte:</span>
+      <span class="scen-label" data-tip="Anno di riferimento per la proiezione. I livelli cambiano in base allo scenario SSP selezionato.">Orizzonte:</span>
       <button class="scen-btn" onclick="pickTime(2050,this)">2050</button>
       <button class="scen-btn" onclick="pickTime(2100,this)">2100</button>
       <button class="scen-btn" onclick="pickTime(2150,this)">2150</button>
       <button class="scen-btn" onclick="pickTime(2200,this)">2200</button>
       <button class="scen-btn" onclick="pickTime(2300,this)">2300</button>
-      <button class="scen-btn pessim" onclick="pickTime(99999,this)">☠ SCIOGLIMENTO TOTALE</button>
+      <button class="scen-btn pessim" onclick="pickTime(99999,this)" data-tip="Fusione completa di Antartide (~58m) + Groenlandia (~7.4m) + ghiacciai montani (~0.5m) = ~65m. Richiederebbe oltre 10.000 anni.">☠ SCIOGLIMENTO TOTALE</button>
     </div>
   </div>
 </div>
