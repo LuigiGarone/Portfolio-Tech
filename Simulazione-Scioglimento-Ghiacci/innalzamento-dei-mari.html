@@ -118,7 +118,7 @@ svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing
   <div class="si" data-tip="Superficie terrestre globale che verrebbe sommersa a questo livello. Basato su dati altimetrici USGS e NASA."><span class="sl">Superficie sommersa</span><span class="sv" id="sArea">0 km²</span></div>
   <div class="si" data-tip="Stima della popolazione mondiale che vive nelle zone che verrebbero sommerse. Fonte: IPCC AR6 + proiezioni demografiche."><span class="sl">Popolazione a rischio</span><span class="sv hot" id="sPop">0</span></div>
   <div class="si" data-tip="Superficie italiana sommersa, calcolata su 14 zone costiere e pianure con dati altimetrici reali."><span class="sl">Italia sommersa</span><span class="sv" id="sIta">0 km²</span></div>
-  <div class="si si-wide" data-tip="Confronto livelli nei 3 scenari SSP per l'orizzonte selezionato. Il valore evidenziato corrisponde allo scenario attivo."><span class="sl">Scenari SSP a confronto</span><div class="scen-compare" id="sCompare"><span class="sc-item sc-ottim">🟢 +0.00m</span><span class="sc-item sc-prob sc-active">🟡 +0.00m</span><span class="sc-item sc-pessim">🔴 +0.00m</span></div></div>
+  <div class="si si-wide" data-tip="Con orizzonte selezionato: livelli previsti nei 3 scenari. Con slider manuale: QUANDO ogni scenario raggiungerebbe questo livello. Lo scenario evidenziato è quello attivo."><span class="sl" id="sCompareLabel">Scenari SSP a confronto</span><div class="scen-compare" id="sCompare"><span class="sc-item sc-ottim">🟢 Oggi</span><span class="sc-item sc-prob sc-active">🟡 Oggi</span><span class="sc-item sc-pessim">🔴 Oggi</span></div></div>
   <div class="si" data-tip="Stima di quando questo livello potrebbe essere raggiunto nello scenario probabile (SSP2-4.5). Oltre i 7m si parla di migliaia di anni."><span class="sl">Stima temporale</span><span class="sv" id="sTime" style="font-size:11px">Oggi</span></div>
 </div>
 <div class="map-tabs">
@@ -594,21 +594,39 @@ function applyScenario(){
   function step(){const prog=Math.min((Date.now()-t0)/dur,1);const e=1-Math.pow(1-prog,3);const v=from+(to-from)*e;document.getElementById("sl").value=v;update(v);if(prog<1)requestAnimationFrame(step);}
   requestAnimationFrame(step);
 }
-function getClosestTime(m){
-  // Trova l'orizzonte più vicino al livello corrente per scenario probabile
-  const times=[2050,2100,2150,2200,2300];
-  let best=2100,bestDiff=Infinity;
-  for(const t of times){const diff=Math.abs(SCEN_MATRIX.prob[t]-m);if(diff<bestDiff){bestDiff=diff;best=t;}}
-  return best;
+function invertScenario(type,m){
+  // Dato un livello m, trova a quale anno lo scenario 'type' lo raggiunge (interpolazione)
+  const times=[2050,2100,2150,2200,2300,99999];
+  const mat=SCEN_MATRIX[type];
+  if(m<=0.01) return {year:"Oggi",level:0};
+  if(m>=65) return {year:"Sciogl. totale",level:65};
+  for(let i=0;i<times.length;i++){
+    if(m<=mat[times[i]]){
+      if(i===0) return {year:"<"+times[0],level:mat[times[0]]};
+      const prev=times[i-1],cur=times[i];
+      const t=(m-mat[prev])/(mat[cur]-mat[prev]);
+      const yr=Math.round(prev+(cur-prev)*t);
+      return {year:cur===99999?(yr>3000?"~"+Math.round(yr/1000)+"000+":"~"+yr):"~"+yr,level:m};
+    }
+  }
+  return {year:">10000",level:65};
 }
 function updateCompare(m){
   const el=document.getElementById("sCompare");if(!el)return;
-  const time=selTime||getClosestTime(m);
   const active=selType||'prob';
-  const vals={ottim:SCEN_MATRIX.ottim[time],prob:SCEN_MATRIX.prob[time],pessim:SCEN_MATRIX.pessim[time]};
-  el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 +${vals.ottim.toFixed(2)}m</span>`+
-    `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 +${vals.prob.toFixed(2)}m</span>`+
-    `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 +${vals.pessim.toFixed(2)}m</span>`;
+  if(selTime){
+    // Orizzonte selezionato: mostra livelli dei 3 scenari per quell'anno
+    const vo=SCEN_MATRIX.ottim[selTime],vp=SCEN_MATRIX.prob[selTime],vx=SCEN_MATRIX.pessim[selTime];
+    el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 +${vo.toFixed(2)}m</span>`+
+      `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 +${vp.toFixed(2)}m</span>`+
+      `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 +${vx.toFixed(2)}m</span>`;
+  } else {
+    // Slider manuale: dato il livello, mostra QUANDO ogni scenario lo raggiunge
+    const ro=invertScenario('ottim',m),rp=invertScenario('prob',m),rx=invertScenario('pessim',m);
+    el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 ${ro.year}</span>`+
+      `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 ${rp.year}</span>`+
+      `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 ${rx.year}</span>`;
+  }
 }
 
 // ══════════════════════════════════════════════════════
