@@ -520,10 +520,6 @@ async function initItaly(){
   }).addTo(italyMap);
   // DEM Flood layer
   floodDEMLayer=new FloodDEMLayer({pane:'floodPane'}).addTo(italyMap);
-  // Labels
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{
-    maxZoom:18,opacity:0.7,pane:'labelsPane'
-  }).addTo(italyMap);
   // Regioni
   try{
     const url='https://cdn.jsdelivr.net/gh/openpolis/geojson-italy@master/geojson/limits_IT_regions.geojson';
