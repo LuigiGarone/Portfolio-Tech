@@ -86,6 +86,13 @@ svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing
 .time-badge{padding:4px 10px;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.15);border-radius:4px;font-size:11px;color:var(--accent);letter-spacing:1px;font-family:'Inconsolata',monospace;transition:all .4s;}
 .time-badge.hot{background:rgba(255,48,48,.06);border-color:rgba(255,48,48,.2);color:var(--danger);}
 .time-badge .time-icon{margin-right:4px;}
+.si-wide{min-width:200px;}
+.scen-compare{display:flex;gap:6px;align-items:center;margin-top:2px;}
+.sc-item{font-size:11px;font-family:'Inconsolata',monospace;padding:2px 6px;border-radius:3px;color:var(--dim);transition:all .3s;white-space:nowrap;}
+.sc-item.sc-active{font-weight:700;font-size:13px;}
+.sc-ottim.sc-active{color:#30dd60;background:rgba(0,255,80,.08);}
+.sc-prob.sc-active{color:var(--accent);background:rgba(0,200,255,.08);}
+.sc-pessim.sc-active{color:var(--danger);background:rgba(255,48,48,.08);}
 #tip{position:fixed;background:rgba(2,12,26,.95);border:1px solid #0a2840;color:#ddeeff;padding:6px 12px;border-radius:5px;font-size:13px;font-family:'Inconsolata',monospace;pointer-events:none;z-index:999;display:none;max-width:340px;}
 @media(max-width:680px){.bot,.bot.three-col{grid-template-columns:1fr;}.lbig{font-size:34px;min-width:80px;}.scen-row{gap:3px;}.scen-btn{padding:4px 8px;font-size:10px;}.si{min-width:80px;padding:4px 6px;}.stats{gap:4px;padding:6px 10px;}.footer-bar{flex-wrap:wrap;gap:8px;padding:10px 16px;}.footer-bar .footer-role{font-size:10px;}[data-tip]:hover::after{max-width:220px;font-size:10px;}}
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--border);}
@@ -111,7 +118,7 @@ svg{width:100%;height:100%;display:block;cursor:grab;}svg:active{cursor:grabbing
   <div class="si" data-tip="Superficie terrestre globale che verrebbe sommersa a questo livello. Basato su dati altimetrici USGS e NASA."><span class="sl">Superficie sommersa</span><span class="sv" id="sArea">0 km²</span></div>
   <div class="si" data-tip="Stima della popolazione mondiale che vive nelle zone che verrebbero sommerse. Fonte: IPCC AR6 + proiezioni demografiche."><span class="sl">Popolazione a rischio</span><span class="sv hot" id="sPop">0</span></div>
   <div class="si" data-tip="Superficie italiana sommersa, calcolata su 14 zone costiere e pianure con dati altimetrici reali."><span class="sl">Italia sommersa</span><span class="sv" id="sIta">0 km²</span></div>
-  <div class="si" data-tip="SSP = Shared Socioeconomic Pathways. SSP1-2.6: sviluppo green, +1.8°C, +0.38m al 2100. SSP2-4.5: politiche attuali, +2.7°C, +0.66m al 2100. SSP5-8.5: fossile intensivo, +4.4°C, +1.01m al 2100. Orizzonti: 2050–2300 + scioglimento totale."><span class="sl">Scenario</span><span class="sv" id="sScen" style="font-size:11px">Baseline 2024</span></div>
+  <div class="si si-wide" data-tip="Confronto livelli nei 3 scenari SSP per l'orizzonte selezionato. Il valore evidenziato corrisponde allo scenario attivo."><span class="sl">Scenari SSP a confronto</span><div class="scen-compare" id="sCompare"><span class="sc-item sc-ottim">🟢 +0.00m</span><span class="sc-item sc-prob sc-active">🟡 +0.00m</span><span class="sc-item sc-pessim">🔴 +0.00m</span></div></div>
   <div class="si" data-tip="Stima di quando questo livello potrebbe essere raggiunto nello scenario probabile (SSP2-4.5). Oltre i 7m si parla di migliaia di anni."><span class="sl">Stima temporale</span><span class="sv" id="sTime" style="font-size:11px">Oggi</span></div>
 </div>
 <div class="map-tabs">
@@ -542,7 +549,7 @@ async function initItaly(){
   cityMkrs=[];
   iCities.forEach(c=>{
     const mk=L.circleMarker([c.la,c.lo],{radius:c.imp?8:5,fillColor:'#ffaa00',color:'#000',weight:2,fillOpacity:0.95,pane:'cityPane'}).addTo(italyMap);
-    mk.bindTooltip(`<b>${c.n}</b> · ${c.e}m s.l.m.`,{className:'dark-tooltip',direction:'top',offset:[0,-8],permanent:c.imp});
+    mk.bindTooltip(`<b>${c.n}</b> · ${c.e}m s.l.m.`,{className:'dark-tooltip',direction:'top',offset:[0,-8]});
     cityMkrs.push({m:mk,c});
   });
   document.getElementById("iPanel").classList.add("loaded");
@@ -587,11 +594,21 @@ function applyScenario(){
   function step(){const prog=Math.min((Date.now()-t0)/dur,1);const e=1-Math.pow(1-prog,3);const v=from+(to-from)*e;document.getElementById("sl").value=v;update(v);if(prog<1)requestAnimationFrame(step);}
   requestAnimationFrame(step);
 }
-function scenLabel(){
-  if(!selType&&!selTime) return "Manuale";
-  if(selType&&!selTime) return SCEN_NAMES[selType];
-  if(!selType&&selTime) return TIME_NAMES[selTime];
-  return `${SCEN_NAMES[selType]} — ${TIME_NAMES[selTime]}`;
+function getClosestTime(m){
+  // Trova l'orizzonte più vicino al livello corrente per scenario probabile
+  const times=[2050,2100,2150,2200,2300];
+  let best=2100,bestDiff=Infinity;
+  for(const t of times){const diff=Math.abs(SCEN_MATRIX.prob[t]-m);if(diff<bestDiff){bestDiff=diff;best=t;}}
+  return best;
+}
+function updateCompare(m){
+  const el=document.getElementById("sCompare");if(!el)return;
+  const time=selTime||getClosestTime(m);
+  const active=selType||'prob';
+  const vals={ottim:SCEN_MATRIX.ottim[time],prob:SCEN_MATRIX.prob[time],pessim:SCEN_MATRIX.pessim[time]};
+  el.innerHTML=`<span class="sc-item sc-ottim ${active==='ottim'?'sc-active':''}">🟢 +${vals.ottim.toFixed(2)}m</span>`+
+    `<span class="sc-item sc-prob ${active==='prob'?'sc-active':''}">🟡 +${vals.prob.toFixed(2)}m</span>`+
+    `<span class="sc-item sc-pessim ${active==='pessim'?'sc-active':''}">🔴 +${vals.pessim.toFixed(2)}m</span>`;
 }
 
 // ══════════════════════════════════════════════════════
@@ -608,7 +625,7 @@ function update(m){
   document.getElementById("sArea").textContent=fmt(g.km2)+" km²";
   document.getElementById("sPop").textContent=g.pop>0?fmt(g.pop*1e6):"0";
   document.getElementById("sIta").textContent=fmt(italyKm2(m))+" km²";
-  document.getElementById("sScen").textContent=scenLabel();
+  updateCompare(m);
   const timeEl=document.getElementById("sTime");
   timeEl.textContent=getTimeEstimate(m);
   timeEl.style.color=m>=10?"var(--danger)":m>=2?"#ff8800":"var(--accent)";
@@ -692,7 +709,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
     document.querySelectorAll(".scen-btn").forEach(b=>b.classList.remove("on"));
     update(parseFloat(e.target.value));
   });
-  await initWorld();update(0);updateTables(0);
+  await initWorld();selType='prob';update(0);updateTables(0);updateCompare(0);
 });
 </script>
 </body>
