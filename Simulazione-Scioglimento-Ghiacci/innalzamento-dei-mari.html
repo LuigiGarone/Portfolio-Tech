@@ -592,7 +592,9 @@ function applyScenario(){
   requestAnimationFrame(step);
 }
 function scenLabel(){
-  if(!selType||!selTime)return curLvl>0.05?`+${curLvl.toFixed(2)}m`:"Baseline 2024";
+  if(!selType&&!selTime) return "Manuale";
+  if(selType&&!selTime) return SCEN_NAMES[selType];
+  if(!selType&&selTime) return TIME_NAMES[selTime];
   return `${SCEN_NAMES[selType]} — ${TIME_NAMES[selTime]}`;
 }
 
